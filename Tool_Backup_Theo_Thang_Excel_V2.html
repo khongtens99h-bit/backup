@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool Backup Theo Tháng + Báo Cáo Excel</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#0f141b; --line:#2b3440;
+  --text:#f0f4f8; --muted:#9aa7b4; --accent:#3b82f6; --ok:#22c55e;
+  --warn:#f59e0b; --danger:#ef4444;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b0f14,#111827);color:var(--text);font-family:Segoe UI,Arial,sans-serif}
+.wrap{max-width:1220px;margin:0 auto;padding:28px}
+h1{margin:0 0 8px;font-size:30px}
+.sub{color:var(--muted);line-height:1.55;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:440px 1fr;gap:18px;align-items:start}
+.card{background:rgba(22,27,34,.98);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 16px 38px rgba(0,0,0,.22)}
+.section-title{font-size:16px;font-weight:800;margin-bottom:12px}
+.field{margin-bottom:16px}
+label{display:block;font-weight:700;margin-bottom:7px}
+input[type=text],input[type=number],select{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode label,.checkline{display:flex;align-items:center;gap:8px;padding:12px;margin:0;border:1px solid var(--line);border-radius:11px;background:var(--panel2);cursor:pointer;font-weight:700}
+.checkline{margin-top:8px}
+.help{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.45}
+.warn{padding:12px 13px;border-radius:11px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);color:#ffd089;font-size:13px;line-height:1.5;margin-top:8px}
+.buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+button{border:0;border-radius:11px;padding:11px 14px;font-weight:800;cursor:pointer;color:white;background:var(--accent);font-size:14px}
+button:hover{filter:brightness(1.08)}
+button.secondary{background:#2a3442}
+button.good{background:var(--ok)}
+textarea{width:100%;min-height:760px;border:1px solid var(--line);background:#090d12;color:#d9e2ec;border-radius:13px;padding:14px;font-family:Consolas,monospace;font-size:13px;line-height:1.5;resize:vertical;white-space:pre}
+.status{min-height:22px;margin-top:12px;color:#9fd2ff;font-weight:700}
+.preview{margin-top:16px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:#d5dde7;font-family:Consolas,monospace;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px;margin-left:5px;background:#243148;color:#bfd5ff}
+@media(max-width:920px){.wrap{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tool Backup Theo Tháng + Báo Cáo Excel</h1>
+  <div class="sub">
+    Backup tất cả môn có đúng <b>Năm / Tháng</b> được chọn, giữ nguyên cấu trúc,
+    đồng thời backup file Excel báo cáo nằm ở thư mục gốc của từng môn và tạo một
+    <b>Excel báo cáo backup tổng</b>.
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="section-title">1. Thiết lập</div>
+
+      <div class="field">
+        <label>Ổ / folder nguồn</label>
+        <input id="source" type="text" value="E:\" spellcheck="false">
+        <div class="help">Ví dụ: E:\ hoặc E:\4. Sản phẩm\4. ĐÃ UP WEB</div>
+      </div>
+
+      <div class="field">
+        <label>Ổ / folder backup</label>
+        <input id="backup" type="text" value="F:\BACKUP_TEST" spellcheck="false">
+        <div class="help">Nên đặt ở ổ cứng khác với ổ nguồn.</div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Năm</label>
+          <input id="year" type="number" value="2026" min="2000" max="2100">
+        </div>
+        <div class="field">
+          <label>Tháng</label>
+          <select id="month">
+            <option value="1">01 - Tháng 01</option><option value="2">02 - Tháng 02</option>
+            <option value="3">03 - Tháng 03</option><option value="4">04 - Tháng 04</option>
+            <option value="5">05 - Tháng 05</option><option value="6">06 - Tháng 06</option>
+            <option value="7">07 - Tháng 07</option><option value="8" selected>08 - Tháng 08</option>
+            <option value="9">09 - Tháng 09</option><option value="10">10 - Tháng 10</option>
+            <option value="11">11 - Tháng 11</option><option value="12">12 - Tháng 12</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Chế độ</label>
+        <div class="mode">
+          <label><input type="radio" name="mode" value="preview" checked> Xem thử <span class="badge">an toàn</span></label>
+          <label><input type="radio" name="mode" value="real"> Backup thật</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="checkline">
+          <input id="copyReports" type="checkbox" checked>
+          Backup Excel báo cáo ở gốc từng môn
+        </label>
+        <div class="help">Ví dụ: E:\1. BÓNG ĐÁ\BAO_CAO_CHIA_THANG_....xlsx</div>
+      </div>
+
+      <div class="field">
+        <label>Mẫu tên file Excel báo cáo</label>
+        <input id="pattern" type="text" value="BAO_CAO*.xlsx" spellcheck="false">
+        <div class="help">Mặc định sẽ lấy các file như BAO_CAO_CHIA_THANG_....xlsx. Có thể đổi thành *.xlsx nếu muốn lấy toàn bộ Excel ở gốc môn.</div>
+      </div>
+
+      <div class="warn">
+        <b>Xem thử:</b> không copy dữ liệu tháng và không copy báo cáo gốc, nhưng vẫn tạo một Excel báo cáo preview để bạn kiểm tra.<br>
+        <b>Backup thật:</b> chỉ copy/cập nhật, không dùng /MIR nên không tự xóa dữ liệu đã backup.
+      </div>
+
+      <div class="buttons">
+        <button id="generateBtn">Tạo code PowerShell</button>
+        <button id="copyBtn" class="good">Copy code</button>
+        <button id="downloadBtn" class="secondary">Tải file .ps1</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="pathPreview" class="preview"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">2. Code PowerShell</div>
+      <textarea id="code" spellcheck="false" placeholder="Code sẽ xuất hiện tại đây..."></textarea>
+    </div>
+  </div>
+</div>
+
+<script type="text/plain" id="ps-template">
+# ============================================================
+# BACKUP THEO THÁNG + BACKUP EXCEL BÁO CÁO GỐC
+# + TẠO EXCEL BÁO CÁO BACKUP TỔNG
+# ============================================================
+
+$SourceRoot = '__SOURCE__'
+$BackupRoot = '__BACKUP__'
+
+$Year  = __YEAR__
+$Month = __MONTH__
+
+# $true  = XEM THỬ - không copy dữ liệu
+# $false = BACKUP THẬT
+$Preview = __PREVIEW__
+
+# Có backup file Excel báo cáo nằm trực tiếp ở gốc từng môn không?
+$CopyRootReports = __COPY_REPORTS__
+
+# Ví dụ: BAO_CAO*.xlsx
+$ReportPattern = '__PATTERN__'
+
+
+# ============================================================
+# KIỂM TRA ĐƯỜNG DẪN
+# ============================================================
+
+if (-not (Test-Path -LiteralPath $SourceRoot)) {
+    Write-Host ""
+    Write-Host "KHÔNG TÌM THẤY NGUỒN:" -ForegroundColor Red
+    Write-Host $SourceRoot -ForegroundColor Yellow
+    return
+}
+
+$SourceFull = [System.IO.Path]::GetFullPath($SourceRoot)
+$BackupFull = [System.IO.Path]::GetFullPath($BackupRoot)
+
+if ($BackupFull.StartsWith($SourceFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Host ""
+    Write-Host "KHÔNG NÊN ĐẶT FOLDER BACKUP BÊN TRONG FOLDER NGUỒN." -ForegroundColor Red
+    Write-Host "Nguồn : $SourceFull"
+    Write-Host "Backup: $BackupFull"
+    return
+}
+
+if (-not (Test-Path -LiteralPath $BackupRoot)) {
+    if ($Preview) {
+        Write-Host "PREVIEW: folder backup chưa tồn tại, vẫn tiếp tục mô phỏng." -ForegroundColor Yellow
+    }
+    else {
+        New-Item -ItemType Directory -Path $BackupRoot -Force | Out-Null
+    }
+}
+
+$MonthNumber = "{0:D2}" -f $Month
+$MonthFolder = "$MonthNumber. THÁNG $MonthNumber"
+$TimeStamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
+$DetailRows = @()
+$RootReportRows = @()
+
+
+# ============================================================
+# TÌM CÁC FOLDER THÁNG
+# ============================================================
+
+$MonthFolders = Get-ChildItem `
+    -LiteralPath $SourceRoot `
+    -Directory `
+    -Recurse `
+    -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.Name -eq $MonthFolder -and
+        $_.Parent.Name -eq "$Year"
+    }
+
+if (-not $MonthFolders) {
+    Write-Host ""
+    Write-Host "KHÔNG TÌM THẤY FOLDER $Year\$MonthFolder" -ForegroundColor Yellow
+    return
+}
+
+Write-Host ""
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "BACKUP $MonthNumber/$Year" -ForegroundColor Cyan
+Write-Host "Nguồn : $SourceRoot"
+Write-Host "Backup: $BackupRoot"
+Write-Host "Số folder tháng tìm thấy: $($MonthFolders.Count)"
+Write-Host "==================================================" -ForegroundColor Cyan
+
+
+# ============================================================
+# BACKUP TỪNG FOLDER THÁNG
+# ============================================================
+
+$SourceBase = $SourceRoot.TrimEnd("\")
+
+foreach ($MonthDir in $MonthFolders) {
+
+    # MonthDir = ...\<MÔN>\<NĂM>\<THÁNG>
+    $YearDir = $MonthDir.Parent
+    $SportDir = $YearDir.Parent
+
+    $RelativePath = $MonthDir.FullName.Substring($SourceBase.Length).TrimStart("\")
+    $Destination = Join-Path $BackupRoot $RelativePath
+
+    Write-Host ""
+    Write-Host "--------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "MÔN   :" $SportDir.Name -ForegroundColor Cyan
+    Write-Host "NGUỒN :" $MonthDir.FullName
+    Write-Host "ĐÍCH  :" $Destination -ForegroundColor Yellow
+
+    $RoboArgs = @(
+        $MonthDir.FullName
+        $Destination
+        "/E"
+        "/COPY:DAT"
+        "/DCOPY:DAT"
+        "/R:2"
+        "/W:2"
+        "/XJ"
+        "/Z"
+        "/FFT"
+        "/NP"
+    )
+
+    if ($Preview) {
+        $RoboArgs += "/L"
+    }
+
+    & robocopy @RoboArgs
+    $ExitCode = $LASTEXITCODE
+
+    if ($ExitCode -lt 8) {
+        $Status = if ($Preview) { "XEM THỬ OK" } else { "BACKUP OK" }
+    }
+    else {
+        $Status = "LỖI ROBOCOPY"
+    }
+
+    $DetailRows += [PSCustomObject]@{
+        Loai        = "FOLDER THÁNG"
+        Mon         = $SportDir.Name
+        Nam         = $Year
+        Thang       = $MonthNumber
+        Nguon       = $MonthDir.FullName
+        Dich        = $Destination
+        TrangThai   = $Status
+        RobocopyCode = $ExitCode
+    }
+
+
+    # ========================================================
+    # BACKUP FILE EXCEL BÁO CÁO NẰM Ở GỐC MÔN
+    # Giữ nguyên vị trí:
+    # E:\1. BÓNG ĐÁ\BAO_CAO....xlsx
+    # ->
+    # F:\BACKUP\1. BÓNG ĐÁ\BAO_CAO....xlsx
+    # ========================================================
+
+    if ($CopyRootReports) {
+
+        $SportRelative = $SportDir.FullName.Substring($SourceBase.Length).TrimStart("\")
+        $BackupSportRoot = Join-Path $BackupRoot $SportRelative
+
+        $Reports = Get-ChildItem `
+            -LiteralPath $SportDir.FullName `
+            -File `
+            -Filter $ReportPattern `
+            -ErrorAction SilentlyContinue
+
+        foreach ($ReportFile in $Reports) {
+
+            $ReportDestination = Join-Path $BackupSportRoot $ReportFile.Name
+
+            if ($Preview) {
+                $ReportStatus = "XEM THỬ - SẼ COPY"
+
+                Write-Host "EXCEL  :" $ReportFile.Name -ForegroundColor Magenta
+                Write-Host "     ->" $ReportDestination
+            }
+            else {
+
+                if (-not (Test-Path -LiteralPath $BackupSportRoot)) {
+                    New-Item -ItemType Directory -Path $BackupSportRoot -Force | Out-Null
+                }
+
+                try {
+                    Copy-Item `
+                        -LiteralPath $ReportFile.FullName `
+                        -Destination $ReportDestination `
+                        -Force `
+                        -ErrorAction Stop
+
+                    # Giữ ngày sửa của file nguồn
+                    $Copied = Get-Item -LiteralPath $ReportDestination
+                    $Copied.LastWriteTime = $ReportFile.LastWriteTime
+
+                    $ReportStatus = "ĐÃ COPY"
+                }
+                catch {
+                    $ReportStatus = "LỖI: $($_.Exception.Message)"
+                }
+            }
+
+            $RootReportRows += [PSCustomObject]@{
+                Mon          = $SportDir.Name
+                TenFile      = $ReportFile.Name
+                NgaySua      = $ReportFile.LastWriteTime
+                Nguon        = $ReportFile.FullName
+                Dich         = $ReportDestination
+                TrangThai    = $ReportStatus
+            }
+        }
+    }
+}
+
+
+# ============================================================
+# TẠO EXCEL BÁO CÁO BACKUP
+# ============================================================
+
+if ($Preview) {
+    $ExcelReport = Join-Path `
+        $env:TEMP `
+        "BAO_CAO_BACKUP_PREVIEW_${Year}_${MonthNumber}_$TimeStamp.xlsx"
+}
+else {
+    $LogFolder = Join-Path $BackupRoot "_BACKUP_LOG\$Year\$MonthFolder"
+
+    if (-not (Test-Path -LiteralPath $LogFolder)) {
+        New-Item -ItemType Directory -Path $LogFolder -Force | Out-Null
+    }
+
+    $ExcelReport = Join-Path `
+        $LogFolder `
+        "BAO_CAO_BACKUP_${Year}_${MonthNumber}_$TimeStamp.xlsx"
+}
+
+try {
+    $Excel = New-Object -ComObject Excel.Application
+}
+catch {
+    Write-Host ""
+    Write-Host "KHÔNG MỞ ĐƯỢC MICROSOFT EXCEL." -ForegroundColor Red
+    Write-Host "Dữ liệu backup đã xử lý, nhưng không tạo được báo cáo .xlsx." -ForegroundColor Yellow
+    return
+}
+
+$Excel.Visible = $false
+$Excel.DisplayAlerts = $false
+$Workbook = $Excel.Workbooks.Add()
+
+
+# ============================================================
+# SHEET 1 - TONG_HOP
+# ============================================================
+
+$Sheet1 = $Workbook.Worksheets.Item(1)
+$Sheet1.Name = "TONG_HOP"
+
+$Sheet1.Cells.Item(1,1) = "BÁO CÁO BACKUP THEO THÁNG"
+$Sheet1.Range("A1:D1").Merge()
+$Sheet1.Range("A1:D1").Font.Bold = $true
+$Sheet1.Range("A1:D1").Font.Size = 16
+
+$SummaryData = @(
+    @("Nguồn", $SourceRoot),
+    @("Ổ Backup", $BackupRoot),
+    @("Năm", $Year),
+    @("Tháng", $MonthNumber),
+    @("Chế độ", $(if ($Preview) { "XEM THỬ" } else { "BACKUP THẬT" })),
+    @("Folder tháng tìm thấy", $MonthFolders.Count),
+    @("Excel báo cáo gốc tìm thấy", $RootReportRows.Count),
+    @("Thời gian chạy", (Get-Date -Format "dd/MM/yyyy HH:mm:ss"))
+)
+
+$r = 3
+foreach ($line in $SummaryData) {
+    $Sheet1.Cells.Item($r,1) = $line[0]
+    $Sheet1.Cells.Item($r,2) = $line[1]
+    $r++
+}
+
+$Sheet1.Range("A3:A10").Font.Bold = $true
+$Sheet1.Columns.Item(1).ColumnWidth = 28
+$Sheet1.Columns.Item(2).ColumnWidth = 65
+
+
+# ============================================================
+# SHEET 2 - CHI_TIET_FOLDER
+# ============================================================
+
+$Sheet2 = $Workbook.Worksheets.Add()
+$Sheet2.Name = "CHI_TIET_FOLDER"
+
+$Headers2 = @(
+    "STT","LOẠI","MÔN","NĂM","THÁNG",
+    "NGUỒN","ĐÍCH","TRẠNG THÁI","ROBOCOPY CODE"
+)
+
+for ($i=0; $i -lt $Headers2.Count; $i++) {
+    $Sheet2.Cells.Item(1,$i+1) = $Headers2[$i]
+}
+
+$row = 2
+$stt = 1
+foreach ($Item in $DetailRows) {
+    $Sheet2.Cells.Item($row,1) = $stt
+    $Sheet2.Cells.Item($row,2) = $Item.Loai
+    $Sheet2.Cells.Item($row,3) = $Item.Mon
+    $Sheet2.Cells.Item($row,4) = $Item.Nam
+    $Sheet2.Cells.Item($row,5) = $Item.Thang
+    $Sheet2.Cells.Item($row,6) = $Item.Nguon
+    $Sheet2.Cells.Item($row,7) = $Item.Dich
+    $Sheet2.Cells.Item($row,8) = $Item.TrangThai
+    $Sheet2.Cells.Item($row,9) = $Item.RobocopyCode
+    $row++
+    $stt++
+}
+
+$Sheet2.Range("A1:I1").Font.Bold = $true
+$Sheet2.Range("A1:I1").Interior.ColorIndex = 15
+$Sheet2.Columns.AutoFit() | Out-Null
+$Sheet2.Columns.Item(6).ColumnWidth = 55
+$Sheet2.Columns.Item(7).ColumnWidth = 55
+$Sheet2.Range("A1:I$([Math]::Max(2,$row-1))").AutoFilter() | Out-Null
+
+
+# ============================================================
+# SHEET 3 - EXCEL_BAO_CAO_GOC
+# ============================================================
+
+$Sheet3 = $Workbook.Worksheets.Add()
+$Sheet3.Name = "EXCEL_BAO_CAO_GOC"
+
+$Headers3 = @(
+    "STT","MÔN","TÊN FILE","NGÀY SỬA",
+    "NGUỒN","ĐÍCH","TRẠNG THÁI"
+)
+
+for ($i=0; $i -lt $Headers3.Count; $i++) {
+    $Sheet3.Cells.Item(1,$i+1) = $Headers3[$i]
+}
+
+$row = 2
+$stt = 1
+foreach ($Item in $RootReportRows) {
+    $Sheet3.Cells.Item($row,1) = $stt
+    $Sheet3.Cells.Item($row,2) = $Item.Mon
+    $Sheet3.Cells.Item($row,3) = $Item.TenFile
+    $Sheet3.Cells.Item($row,4) = $Item.NgaySua.ToString("dd/MM/yyyy HH:mm")
+    $Sheet3.Cells.Item($row,5) = $Item.Nguon
+    $Sheet3.Cells.Item($row,6) = $Item.Dich
+    $Sheet3.Cells.Item($row,7) = $Item.TrangThai
+    $row++
+    $stt++
+}
+
+$Sheet3.Range("A1:G1").Font.Bold = $true
+$Sheet3.Range("A1:G1").Interior.ColorIndex = 15
+$Sheet3.Columns.AutoFit() | Out-Null
+$Sheet3.Columns.Item(5).ColumnWidth = 55
+$Sheet3.Columns.Item(6).ColumnWidth = 55
+$Sheet3.Range("A1:G$([Math]::Max(2,$row-1))").AutoFilter() | Out-Null
+
+
+# ============================================================
+# LƯU EXCEL
+# ============================================================
+
+$Workbook.SaveAs($ExcelReport, 51)
+$Workbook.Close($true)
+$Excel.Quit()
+
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Sheet1) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Sheet2) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Sheet3) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Workbook) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel) | Out-Null
+
+[GC]::Collect()
+[GC]::WaitForPendingFinalizers()
+
+
+# ============================================================
+# KẾT QUẢ
+# ============================================================
+
+Write-Host ""
+Write-Host "==================================================" -ForegroundColor Green
+
+if ($Preview) {
+    Write-Host "HOÀN TẤT PREVIEW - CHƯA COPY DỮ LIỆU" -ForegroundColor Green
+}
+else {
+    Write-Host "BACKUP HOÀN TẤT" -ForegroundColor Green
+}
+
+Write-Host "Folder tháng       :" $MonthFolders.Count
+Write-Host "Excel báo cáo gốc  :" $RootReportRows.Count
+Write-Host ""
+Write-Host "EXCEL BÁO CÁO BACKUP:" -ForegroundColor Cyan
+Write-Host $ExcelReport -ForegroundColor Yellow
+Write-Host "==================================================" -ForegroundColor Green
+
+Start-Process explorer.exe "/select,`"$ExcelReport`""
+</script>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const sourceEl=$('source'), backupEl=$('backup'), yearEl=$('year'), monthEl=$('month');
+  const patternEl=$('pattern'), copyReportsEl=$('copyReports'), codeEl=$('code');
+  const statusEl=$('status'), previewEl=$('pathPreview');
+
+  function mode(){return document.querySelector('input[name="mode"]:checked').value}
+  function psEscape(s){return s.replace(/'/g,"''")}
+
+  function generate(){
+    const source=sourceEl.value.trim(), backup=backupEl.value.trim(), year=yearEl.value.trim();
+    const month=monthEl.value, pattern=patternEl.value.trim() || 'BAO_CAO*.xlsx';
+
+    if(!source || !backup || !year){
+      codeEl.value='';
+      statusEl.textContent='Vui lòng nhập đủ đường dẫn nguồn, backup và năm.';
+      return;
+    }
+
+    let tpl=$('ps-template').textContent;
+    tpl=tpl.replace(/__SOURCE__/g,psEscape(source))
+           .replace(/__BACKUP__/g,psEscape(backup))
+           .replace(/__YEAR__/g,year)
+           .replace(/__MONTH__/g,month)
+           .replace(/__PREVIEW__/g,mode()==='preview'?'$true':'$false')
+           .replace(/__COPY_REPORTS__/g,copyReportsEl.checked?'$true':'$false')
+           .replace(/__PATTERN__/g,psEscape(pattern));
+
+    codeEl.value=tpl.trim();
+
+    const mm=String(month).padStart(2,'0');
+    previewEl.innerHTML =
+      '<b>Dữ liệu tháng:</b><br>' +
+      source + '\\[MÔN]\\' + year + '\\' + mm + '. THÁNG ' + mm +
+      '<br>→ ' + backup + '\\[MÔN]\\' + year + '\\' + mm + '. THÁNG ' + mm +
+      '<br><br><b>Excel báo cáo gốc:</b><br>' +
+      source + '\\[MÔN]\\' + pattern +
+      '<br>→ ' + backup + '\\[MÔN]\\' + pattern +
+      '<br><br><b>Excel báo cáo backup tổng:</b><br>' +
+      backup + '\\_BACKUP_LOG\\' + year + '\\' + mm + '. THÁNG ' + mm + '\\BAO_CAO_BACKUP_....xlsx';
+
+    statusEl.textContent = mode()==='preview'
+      ? 'Đã tạo code XEM THỬ. Không copy dữ liệu.'
+      : 'Đã tạo code BACKUP THẬT. Kiểm tra kỹ đường dẫn trước khi chạy.';
+  }
+
+  async function copyCode(){
+    generate();
+    if(!codeEl.value)return;
+    try{
+      await navigator.clipboard.writeText(codeEl.value);
+      statusEl.textContent='Đã copy code PowerShell.';
+    }catch(e){
+      codeEl.focus(); codeEl.select(); document.execCommand('copy');
+      statusEl.textContent='Đã copy code PowerShell.';
+    }
+  }
+
+  function downloadPS1(){
+    generate();
+    if(!codeEl.value)return;
+    const mm=String(monthEl.value).padStart(2,'0');
+    const blob=new Blob(["\uFEFF"+codeEl.value],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='BACKUP_'+yearEl.value+'_'+mm+'_EXCEL.ps1';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    statusEl.textContent='Đã tạo file .ps1.';
+  }
+
+  $('generateBtn').addEventListener('click',generate);
+  $('copyBtn').addEventListener('click',copyCode);
+  $('downloadBtn').addEventListener('click',downloadPS1);
+
+  [sourceEl,backupEl,yearEl,monthEl,patternEl,copyReportsEl].forEach(el=>{
+    el.addEventListener('input',generate);
+    el.addEventListener('change',generate);
+  });
+  document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',generate));
+
+  generate();
+})();
+</script>
+</body>
+</html>
